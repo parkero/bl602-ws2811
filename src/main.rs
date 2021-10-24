@@ -13,6 +13,8 @@ use crate::pins as p;
 
 use crate::colors::{C_BLUE, C_GREEN, C_RED};
 use bl602_hal as hal;
+use embedded_hal::digital::blocking::OutputPin;
+use core::convert::Infallible;
 use core::fmt::Write;
 use embedded_hal::delay::blocking::DelayMs;
 use embedded_time::rate::*;
@@ -141,7 +143,7 @@ fn main() -> ! {
         pins: [
             &mut gpio_pins.pin0.into_pull_down_output(),
             &mut gpio_pins.pin1.into_pull_down_output(),
-            &mut gpio_pins.pin2.into_pull_down_output(),
+            &mut NoPin,
             &mut gpio_pins.pin3.into_pull_down_output(),
         ],
     };
@@ -221,5 +223,18 @@ fn main() -> ! {
             office_strip.send_all_sequential(&mut pins);
             d.delay_ms(250).ok();
         }
+    }
+}
+
+pub struct NoPin;
+impl OutputPin for NoPin {
+    type Error = Infallible;
+
+    fn set_low(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        Ok(())
     }
 }
