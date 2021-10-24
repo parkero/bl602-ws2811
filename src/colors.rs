@@ -38,8 +38,9 @@ impl Color {
         end_color: Color,
     ) -> Color {
         let lerp = |start: u8, end: u8| {
-            ((factor - in_min) * (end as i32 - start as i32) / (in_max - in_min) + start as i32)
-                as u8
+            let start = start as i32;
+            let end = end as i32;
+            ((factor - in_min) * (end - start) / (in_max - in_min) + start) as u8
         };
         let mut mid_color = C_OFF;
 
