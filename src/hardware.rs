@@ -6,19 +6,13 @@ use embedded_time::duration::*;
 
 pub type DynamicPin<'a> = &'a mut dyn OutputPin<Error = Infallible>;
 
-pub struct HardwareController<'a, T>
-where
-    T: PeriodicTimer,
-{
+pub struct HardwareController<'a, T: PeriodicTimer> {
     pins: [DynamicPin<'a>; NUM_STRIPS],
     timer: T,
 }
 
-impl<'a, T> HardwareController<'a, T> {
-    pub fn new(pins: [DynamicPin<'a>; NUM_STRIPS], timer: T) -> Self
-    where
-        T: PeriodicTimer,
-    {
+impl<'a, T: PeriodicTimer> HardwareController<'a, T> {
+    pub fn new(pins: [DynamicPin<'a>; NUM_STRIPS], timer: T) -> Self {
         HardwareController { pins, timer }
     }
 
