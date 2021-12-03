@@ -46,7 +46,8 @@ where
             for animation in self.animations.iter_mut() {
                 animation.update(&mut self.logical_strip);
             }
-            self.logical_strip.send_all_sequential(hc);
+            // self.logical_strip.send_all_sequential(hc);
+            self.logical_strip.send_all_parallel(hc);
         }
     }
 

@@ -37,6 +37,20 @@ where
     pub fn periodic_wait(&mut self) {
         self.timer.periodic_wait();
     }
+
+    pub unsafe fn set_high_pins(&self, high_pin_mask: u32) {
+        let glb = unsafe { &*bl602_hal::pac::GLB::ptr() };
+        glb.gpio_cfgctl32.modify(|r, w| unsafe {
+            w.bits(r.bits() | high_pin_mask)
+        });
+    }
+
+    pub unsafe fn set_low_pins(&self, low_pin_mask: u32) {
+        let glb = unsafe { &*bl602_hal::pac::GLB::ptr() };
+        glb.gpio_cfgctl32.modify(|r, w| unsafe {
+            w.bits(r.bits() & low_pin_mask)
+        });
+    }
 }
 
 pub trait PeriodicTimer {

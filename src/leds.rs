@@ -147,6 +147,68 @@ pub mod ws28xx {
             }
         }
 
+        pub fn send_all_parallel<T: PeriodicTimer>(&self, hc: &mut HardwareController<T>) {
+            // pregenerate the bytes to be sent every 1/3 of a cycle
+            // |---------------------|---------------------|---------------------|
+            // ^ turn all on         ^ turn off if low     ^ turn all off
+
+            let pins = [0, 3, 1];
+
+            let mut using_pins = 0;
+            for pin in pins {
+                using_pins += 1 << pin;
+            }
+
+            let our_pins_on = using_pins;
+            let our_pins_off = !using_pins;
+
+            // default to setting all pins off
+            let mut bit_timeline = [our_pins_off; crate::MAX_SINGLE_STRIP_BYTE_BUFFER_LENGTH * 8];
+
+            let mut start_index = 0;
+
+            for (pin_index, strip) in self.strips.iter().enumerate() {
+                let end_index = start_index + strip.led_count;
+
+                let current_strip_colors = &self.color_buffer[start_index..end_index];
+
+                let byte_count = strip.led_count * 3;
+
+                let byte_buffer = match strip.reversed {
+                    true => {
+                        self.colors_to_bytes(current_strip_colors.iter().rev(), &strip.color_order)
+                    }
+                    false => self.colors_to_bytes(current_strip_colors.iter(), &strip.color_order),
+                };
+
+                let bit_slice = Self::bytes_as_bit_slice(&byte_buffer[..byte_count]);
+
+                // for each bit store it's high low information in the timeline
+                for (i, _) in bit_slice.iter().by_ref().enumerate().filter(|(_, &b)| b ) {
+                    let stay_high = 1 << pins[pin_index];
+                    bit_timeline[i] |= stay_high;
+                }
+
+                start_index = end_index;
+            }
+
+            hc.periodic_start((StripTimings::WS2812_ADAFRUIT.full_cycle / 3).nanoseconds());
+
+            unsafe { hc.set_low_pins(our_pins_off); }
+            for _ in 0..WS2811_DELAY_LOOPS_BEFORE_SEND {
+                hc.periodic_wait();
+            }
+
+            for pin_bits in bit_timeline {
+                unsafe { hc.set_high_pins(our_pins_on); }
+                hc.periodic_wait();
+                unsafe { hc.set_low_pins(pin_bits); }
+                hc.periodic_wait();
+                unsafe { hc.set_low_pins(our_pins_off); }
+                hc.periodic_wait();
+            }
+        }
+
         fn colors_to_bytes(
             &self,
             colors: impl Iterator<Item = &'a c::Color>,
